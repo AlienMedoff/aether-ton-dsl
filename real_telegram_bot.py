@@ -211,10 +211,9 @@ async def create_real_bot():
             "Используйте /help для справки"
         )
     
-    print("🤖 Запуск реального Telegram бота...")
-    print(f"Bot token: {BOT_TOKEN[:10]}...")
-    
-    await dp.start_polling(bot)
+    print("Starting Aether OS Telegram Bot...")
+    print("Bot is ready!")
+    print("Commands available: /start, /help, /status, /run, /run_parallel, /stop")
 
 def setup_instructions():
     """Инструкции по настройке"""
