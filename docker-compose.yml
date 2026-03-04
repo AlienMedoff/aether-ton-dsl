@@ -1,0 +1,81 @@
+version: '3.8'
+
+# ============================================================
+# Aether OS — docker-compose.yml
+#
+# Environments:
+#   dev:     docker-compose up
+#   testnet: TON_MODE=TESTNET docker-compose up
+#   mainnet: TON_MODE=MAINNET docker-compose --env-file .env.mainnet up
+#
+# Secrets:
+#   Never put real keys here. Use .env file or Docker Secrets.
+#   docker secret create ton_api_key ./secrets/ton_api_key.txt
+# ============================================================
+
+services:
+
+  # ── Redis ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes  # Persist to disk
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Transaction Executor Agent ─────────────────────────────
+  transaction-executor:
+    build: .
+    environment:
+      - AGENT_ID=TransactionExecutorAgent
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TON_MODE=${TON_MODE:-MOCK}
+      - TON_API_ENDPOINT=${TON_API_ENDPOINT:-https://testnet.toncenter.com/api/v2}
+      - TON_API_KEY=${TON_API_KEY:?TON_API_KEY must be set}   # Fails loudly if missing
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: on-failure:3
+
+  # ── Rollback Agent ─────────────────────────────────────────
+  rollback-agent:
+    build: .
+    environment:
+      - AGENT_ID=RollbackAgent
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TON_MODE=${TON_MODE:-MOCK}
+      - TON_API_ENDPOINT=${TON_API_ENDPOINT:-https://testnet.toncenter.com/api/v2}
+      - TON_API_KEY=${TON_API_KEY:?TON_API_KEY must be set}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: on-failure:3
+
+  # ── State Validator ────────────────────────────────────────
+  state-validator:
+    build: .
+    environment:
+      - AGENT_ID=StateValidatorAgent
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TON_MODE=${TON_MODE:-MOCK}
+      - TON_API_ENDPOINT=${TON_API_ENDPOINT:-https://testnet.toncenter.com/api/v2}
+      - TON_API_KEY=${TON_API_KEY:?TON_API_KEY must be set}
+      # Optional: inject wallet addresses at deploy time
+      - WALLET_ADDRESS=${WALLET_ADDRESS:-}
+      - POOL_ADDRESS=${POOL_ADDRESS:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: on-failure:3
+
+volumes:
+  redis_data:
