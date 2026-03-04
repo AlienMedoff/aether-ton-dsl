@@ -119,4 +119,3 @@ Bot: [OK] user_12345_default_fetch: COMPLETED
 - Примеры использования
 
 **Следующий шаг:** Получите токен у @BotFather и запустите реального бота!
-8684511289:AAGGC922ftKGHrb-jHe_o2FDhrGyOT6FEOY
